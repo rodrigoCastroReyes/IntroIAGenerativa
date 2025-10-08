@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ChatGPT – Cliente simple</title>
+  <style>
+    :root { 
+        font-family: system-ui, sans-serif; 
+    }
+    body { 
+        margin: 0; padding: 24px; background:#fafafa; 
+    }
+    .wrap { 
+        max-width: 800px; margin: 0 auto; 
+    }
+    h1 { margin: 0 0 16px; font-size: 1.4rem; }
+    textarea, input, button { font: inherit; }
+    textarea { width: 100%; min-height: 120px; padding: 12px; box-sizing: border-box; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    button { padding: 10px 14px; cursor: pointer; }
+    .out { white-space: pre-wrap; background:#fff; border:1px solid #ddd; padding:12px; margin-top:16px; min-height: 80px; }
+    .muted { color:#666; font-size: .9rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Cliente ChatGPT (vía Flask)</h1>
+
+    <label for="prompt">Pregunta</label>
+    <textarea id="prompt" placeholder="Escribe tu pregunta para ChatGPT..."></textarea>
+
+    <div class="row">
+      <input id="server" type="url" value="http://localhost:5080/ask" style="flex:1" />
+      <button id="send">Enviar</button>
+    </div>
+
+    <div class="muted">El campo de URL debe apuntar a tu endpoint Flask POST <code>/ask</code>.</div>
+
+    <h2>Respuesta</h2>
+    <div id="response" class="out">—</div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const btn = $("#send");
+    const out = $("#response");
+
+    async function ask() {
+      const url = $("#server").value.trim();
+      const prompt = $("#prompt").value.trim();
+      if (!prompt) { out.textContent = "Ingrese una pregunta."; return; }
+
+      btn.disabled = true;
+      out.textContent = "Consultando…";
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          out.textContent = data?.error ? `Error: ${data.error}` : `HTTP ${res.status}`;
+          return;
+        }
+        out.textContent = data.response || "Sin contenido";
+      } catch (err) {
+        out.textContent = "Error de red: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    btn.addEventListener("click", ask);
+    $("#prompt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) ask();
+    });
+  </script>
+</body>
+</html>
